@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eye Pressure Test</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: url('https://i.pinimg.com/736x/36/0e/26/360e264388d747f2574f25177bb4b15a.jpg') no-repeat center center fixed;
+            background-size: cover;
+            font-family: Arial, sans-serif;
+            padding: 50px 0;
+        }
+        .container {
+            text-align: center;
+            padding: 30px;
+            max-width: 90%;
+            margin: 0 auto;
+            animation: fadeIn 1.5s ease-in-out;
+        }
+        .video-container {
+            border: 2px solid #6c757d;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .video-frame {
+            width: 80%;
+            height: auto;
+            max-height: 400px;
+        }
+        .result-image {
+            max-width: 100%;
+            height: auto;
+            border: 2px solid #28a745;
+            border-radius: 8px;
+        }
+        h1 {
+            color: #fff;
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+        p {
+            color: #fff;
+            font-size: 1.1rem;
+        }
+        .btn-primary {
+            font-size: 1.2rem;
+            padding: 12px 25px;
+            background-color: #007bff;
+            transition: transform 0.3s ease-in-out;
+        }
+        .btn-primary:hover {
+            transform: scale(1.1);
+            background-color: #0056b3;
+        }
+        .alert-message {
+            padding: 15px;
+            background-color: #f8d7da;
+            color: #721c24;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Eye Pressure Test</h1>
+        <p class="text-muted">Ensure the camera is focused on your eye before capturing.</p>
+
+        <div class="video-container">
+            <video id="video" class="video-frame" autoplay></video>
+        </div>
+
+        <div class="text-center">
+            <button id="capture-btn" class="btn btn-primary btn-lg">Capture and Analyze</button>
+            <button id="switch-camera-btn" class="btn btn-secondary btn-lg mt-3">Switch Camera</button>
+        </div>
+
+        <div id="result" class="mt-4"></div>
+        <div id="alert-message" class="alert-message" style="display: none;"></div>
+
+        <!-- Audio alert -->
+        <audio id="alert-sound" src="static/images/alert-sound.mp3" preload="auto"></audio>
+
+        <script>
+            let currentStream;
+            let currentDeviceId = null;
+            let videoElement = document.getElementById('video');
+            let cameraList = [];
+
+            // Function to get all video devices
+            function getDevices() {
+                navigator.mediaDevices.enumerateDevices()
+                    .then(devices => {
+                        cameraList = devices.filter(device => device.kind === 'videoinput');
+                        if (cameraList.length > 0) {
+                            // Select the first camera by default
+                            currentDeviceId = cameraList[0].deviceId;
+                            startCamera(currentDeviceId);
+                        } else {
+                            document.getElementById('alert-message').innerText = "No cameras found.";
+                            document.getElementById('alert-message').style.display = "block";
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error getting devices:', err);
+                        document.getElementById('alert-message').innerText = "Error fetching camera devices.";
+                        document.getElementById('alert-message').style.display = "block";
+                    });
+            }
+
+            // Start the camera stream
+            function startCamera(deviceId) {
+                if (currentStream) {
+                    currentStream.getTracks().forEach(track => track.stop());
+                }
+
+                navigator.mediaDevices.getUserMedia({
+                    video: {
+                        deviceId: deviceId ? { exact: deviceId } : undefined
+                    }
+                })
+                .then(function(stream) {
+                    currentStream = stream;
+                    videoElement.srcObject = stream;
+                })
+                .catch(function(err) {
+                    console.error("Error accessing camera: ", err);
+                    document.getElementById('alert-message').innerText = "Error accessing the camera. Please check permissions.";
+                    document.getElementById('alert-message').style.display = "block";
+                });
+            }
+
+            // Switch between front and back camera
+            document.getElementById('switch-camera-btn').addEventListener('click', function() {
+                if (cameraList.length > 1) {
+                    let nextDeviceId = cameraList[0].deviceId === currentDeviceId ? cameraList[1].deviceId : cameraList[0].deviceId;
+                    currentDeviceId = nextDeviceId;
+                    startCamera(currentDeviceId);
+                }
+            });
+
+            // Capture and send image for analysis
+            document.getElementById('capture-btn').addEventListener('click', function() {
+                const canvas = document.createElement('canvas');
+                canvas.width = videoElement.videoWidth;
+                canvas.height = videoElement.videoHeight;
+                const context = canvas.getContext('2d');
+                context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+                const dataURL = canvas.toDataURL('image/jpeg');
+
+                // Send the captured image to the server
+                fetch('/capture', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: dataURL })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.pressure !== null) {
+                        // Display the estimated eye pressure and processed image
+                        document.getElementById('result').innerHTML = ` 
+                            <h4>Estimated Eye Pressure</h4>
+                            <p>Pressure: <strong>${data.pressure} mmHg</strong></p>
+                            <div><img class="result-image" src="/static/${data.image_path}" alt="Processed Eye Image"></div>
+                        `;
+                        document.getElementById('alert-message').style.display = 'none';
+
+                        // Play the alert sound and show a popup message
+                        const alertSound = document.getElementById('alert-sound');
+                        alertSound.play();
+                        alert(data.message);
+                    } else {
+                        document.getElementById('alert-message').innerText = data.message;
+                        document.getElementById('alert-message').style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('alert-message').innerText = "An error occurred. Please try again.";
+                    document.getElementById('alert-message').style.display = 'block';
+                });
+            });
+
+            // Initialize the app by fetching devices and starting the first camera
+            getDevices();
+        </script>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

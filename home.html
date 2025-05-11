@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Page</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Background GIF */
+        body {
+            background: url('https://i.pinimg.com/originals/77/2b/7a/772b7a67c42e3f36145b18300f567dc6.gif') no-repeat center center fixed;
+            background-size: cover;
+            color: white;
+            font-family: 'Arial', sans-serif;
+        }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 2s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        /* Add some padding to the text */
+        .content {
+            padding: 40px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            margin-top: 50px;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .content:hover {
+            transform: scale(1.05);
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 20px;
+        }
+
+        .paragraph {
+            font-size: 1.2rem;
+            margin-top: 20px;
+            line-height: 1.8;
+        }
+
+        .text-animate {
+            animation: textAnimation 1.5s infinite alternate;
+        }
+
+        @keyframes textAnimation {
+            0% { color: #ffcc00; }
+            100% { color: #00ffcc; }
+        }
+
+        .btn-lg {
+            font-size: 1.3rem;
+            padding: 10px 25px;
+            border-radius: 50px;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+
+        .btn-success:hover {
+            background-color: #218838;
+            border-color: #1e7e34;
+            transform: scale(1.1);
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+            border-color: #bd2130;
+            transform: scale(1.1);
+        }
+
+        /* Centered and smaller image with animation */
+        .img-fluid {
+            width: 50%; /* Adjust image size */
+            max-width: 300px; /* Limit maximum size */
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            animation: bounce 2s infinite alternate; /* Bounce effect */
+            margin: 0 auto;
+            display: block;
+        }
+
+        /* Bounce effect for image */
+        @keyframes bounce {
+            0% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+            100% {
+                transform: translateY(0);
+            }
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="content text-center fade-in">
+            <h1 class="text-animate">Welcome to the Eye Pressure Test</h1>
+            <p class="paragraph mt-4">
+                <img src="{{ url_for('static', filename='images/image.jpeg') }}" alt="Processed Image" class="img-fluid">
+            </p>
+            <div class="text-center mt-4">
+                <form action="/ready" method="POST" class="mt-3">
+                    <button type="submit" class="btn btn-success btn-lg">Ready for Test</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
